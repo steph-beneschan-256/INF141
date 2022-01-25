@@ -70,11 +70,10 @@ class Analytics_Data:
         output_file.write("\n\tURL: {}".format(self.longest_page_url))
         output_file.write("\n\tWord Count: {}".format(self.longest_page_length))
 
-        #Time to calculate the goddamn word frequencies
-        #We can add the stopword checking later, can't we...?
+        #To-do: add stopword checking
 
         #Reused code from Assignment 1A
-        #As before, the idea to use tuples for tie-breaking came from this resource: https://stackoverflow.com/a/54396160
+        #Note: the idea to use tuples for tie-breaking came from this resource: https://stackoverflow.com/a/54396160
         words = list(self.word_frequencies.keys())
         sort_key = lambda x: (-self.word_frequencies[x], x)
         words.sort(key=sort_key)
