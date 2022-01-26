@@ -13,10 +13,10 @@ class Analytics_Data:
         self.subdomain_url_count = dict() #URLs and subdomain counts???
         self.most_valid_outlinks_url = "unknwown"
         self.most_valid_outlinks_count = 0
-        self.traps = []
         self.longest_page_url = "unknown"
         self.longest_page_length = 0
         self.word_frequencies = dict() #Words and their frequencies (across the entire corpus)
+
 
     '''
     Take the URL of a page, and that page's number of valid outlinks
@@ -52,7 +52,7 @@ class Analytics_Data:
             self.word_frequencies[word] = 0
         self.word_frequencies[word] += amount
 
-    def log_analytics(self):
+    def log_analytics(self, fetched=0, traps=set()):
 
         output_file = open(self.ANALYTICS_FILE_NAME, 'w')
 
@@ -63,17 +63,18 @@ class Analytics_Data:
         output_file.write("\n\tNumber of Outlinks: {}".format(self.most_valid_outlinks_count))
         
         output_file.write("\nIdentified Traps:")
-        for trap in self.traps:
+        for trap in traps:
             output_file.write("\n\t{}".format(trap))
 
         output_file.write("\nPage with highest word count:")
         output_file.write("\n\tURL: {}".format(self.longest_page_url))
         output_file.write("\n\tWord Count: {}".format(self.longest_page_length))
 
-        #To-do: add stopword checking
+        #Time to calculate the goddamn word frequencies
+        #We can add the stopword checking later, can't we...?
 
         #Reused code from Assignment 1A
-        #Note: the idea to use tuples for tie-breaking came from this resource: https://stackoverflow.com/a/54396160
+        #As before, the idea to use tuples for tie-breaking came from this resource: https://stackoverflow.com/a/54396160
         words = list(self.word_frequencies.keys())
         sort_key = lambda x: (-self.word_frequencies[x], x)
         words.sort(key=sort_key)
