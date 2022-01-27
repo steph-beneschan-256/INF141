@@ -17,6 +17,9 @@ from analytics_data import Analytics_Data
 from frontier import Frontier
 from string_tokenizer import tokenize
 
+# Configures logging and outputting to file
+logging.basicConfig(filename="./history.log", filemode='w', format='%(asctime)s (%(name)s) %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +87,13 @@ class Crawler:
         while self.frontier.has_next_url() and ((self.FETCH_LIMIT <= 0) or (self.frontier.fetched < self.FETCH_LIMIT)):
         #while self.frontier.has_next_url():
             url = self.frontier.get_next_url()
-            #logger.info("Fetching URL %s ... Fetched: %s, Queue size: %s", url, self.frontier.fetched, len(self.frontier))
+
+            #added code to check validity before fetching
+            if not self.is_valid(url):
+                continue
+
+            logger.info("Fetching URL %s ... Fetched: %s, Queue size: %s", url, self.frontier.fetched, len(self.frontier))
+            print("Fetching URL {} ... Fetched: {}, Queue size: {}".format(url, self.frontier.fetched, len(self.frontier)))
             url_data = self.corpus.fetch_url(url)
 
             for next_link in self.extract_next_links(url_data):
@@ -159,7 +168,7 @@ class Crawler:
         but don't return any of its outlinks or count it in the analytics
         '''
         fingerprints = get_fingerprints(text_no_markup)
-        print("\tdetecting for duplication for {}".format(url))
+        logger.info("\tchecking duplication for {}".format(url))
         #The is_near_duplicate method should handle detecting and registering traps
         #But maybe it should be split into multiple functions?
         if(self.frontier.is_near_duplicate(url, fingerprints)):
@@ -186,6 +195,7 @@ class Crawler:
         valid_links = 0 #For the analytics
         for link in doc.iterlinks():
             link_url = link[2] #According to the lxml documentation, link_url should be a tuple: (element, attribute, link, pos)
+            #Is it possible to detect duplication of each new link here?
             if((link != None) and self.is_valid(link_url)):
                 outputLinks.append(link_url)
                 valid_links += 1
@@ -206,7 +216,7 @@ class Crawler:
         #Using the frontier to store trap data
         trimmed = self.frontier.trim_url(url)
         if(trimmed in self.frontier.traps):
-            print("help")
+            logger.info("\tTrap found. Ignoring.")
             return False
 
         #TODO: Check for repeating subdomains (maybe if a subdomain appears 3+ times in the URL, declare it invalid?)
@@ -230,5 +240,6 @@ class Crawler:
                                     + "|rm|smil|wmv|swf|wma|zip|rar|gz|pdf)$", parsed.path.lower())
 
         except TypeError:
-            print("TypeError for ", parsed)
+            logger.info("TypeError for ", parsed)
+            #print("TypeError for ", parsed)
             return False
