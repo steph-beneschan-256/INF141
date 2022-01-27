@@ -72,7 +72,7 @@ class Frontier:
         #Maybe have it be one list of fingerprint sets per trimmed URL
         trimmed = self.trim_url(url)
         for saved_prints in self.fingerprint_list[trimmed]:
-            if(fingerprinter.compare_prints(prints, saved_prints, self.FINGERPRINT_OVERLAP_THRESHOLD)):
+            if(fingerprinter.compare_prints(prints, saved_prints)):
                 self.near_dupes[trimmed] += 1
                 if(self.near_dupes[trimmed] > self.MAX_DUPES_ALLOWED):
                     #If it has too many near-duplicate pages, then consider it a trap
