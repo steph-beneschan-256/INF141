@@ -38,6 +38,10 @@ class Crawler:
     def __init__(self, frontier, corpus):
         self.frontier = frontier
         self.corpus = corpus
+        self.counter_links_crawled = 0
+        self.counter_domain = defaultdict(int)
+        self.traps = []
+
 
     '''
     Save analytics data
@@ -65,16 +69,6 @@ class Crawler:
         else:
             logger.info("No previous analytics data found. Recording new data ...")
             self.analytics_data = Analytics_Data()
-
-    '''
-    Call this method when the crawling is complete
-    (For testing, call it whenever the program exits)
-    '''
-    def log_analytics_data(self):
-        self.analytics_data.log_analytics(self.frontier.fetched, self.frontier.traps)
-        self.counter_links_crawled = 0
-        self.counter_domain = defaultdict(int)
-        self.traps = []
 
     def start_crawling(self):
         """
@@ -242,11 +236,14 @@ class Crawler:
             return False
 
         #TODO: Check for repeating subdomains (maybe if a subdomain appears 3+ times in the URL, declare it invalid?)
-        subdomains = url.split('.')
+        #Cora said that it should be fine to use regex for this
+        subdomains = self.extract_subdomains(url)
         
         #original code from skeleton below:
         parsed = urlparse(url)
         domain = parsed.netloc + parsed.path
+
+        self.counter_domain[domain] += 1
 
         # to avoid calendar trap, track the access amounts
         # the arbitrary and intuitive number here I put 20
