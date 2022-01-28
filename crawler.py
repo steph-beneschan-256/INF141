@@ -7,6 +7,7 @@ import os
 from lxml import etree as etree
 from lxml import html
 from bs4 import BeautifulSoup
+from lxml.html import soupparser
 import pickle
 from fingerprinter import get_fingerprints
 from collections import defaultdict
@@ -47,8 +48,6 @@ class Crawler:
     Save analytics data
     (not the same as writing the final analytics file at the end)
     This method is based on the save_frontier method in frontier.py
-    
-    (Note to self: confirm that we are allowed to write additional classes)
     '''
     def save_analytics_data(self):
         if(not os.path.exists(self.ANALYTICS_DIR_NAME)):
@@ -77,6 +76,7 @@ class Crawler:
         """
 
         #Note: need to reset analytics data when starting a new crawl
+        #TODO: Add reset function to the analytics data object, and call that here
         self.load_analytics_data()
 
         while self.frontier.has_next_url() and ((self.FETCH_LIMIT <= 0) or (self.frontier.fetched < self.FETCH_LIMIT)):
@@ -118,7 +118,7 @@ class Crawler:
         Sometimes the encoding isn't present
         '''
         if(url_data["content_type"] == None):
-            return outputLinks
+            return []
 
         content_type = url_data["content_type"].removeprefix("b\'") #https://docs.python.org/3.9/library/stdtypes.html?highlight=removeprefix#str.removeprefix
         file_type = content_type.split(';')[0] #usually content_type has both a filetype and an encoding, but sometimes the encoding is absent...
@@ -127,25 +127,26 @@ class Crawler:
         Misc. notes on file parsing:
         - We can assume that we only need to decode using UTF-8 
             https://piazza.com/class/kxzmqq02jne6go?cid=78
+        - Need to parse 
         - 
         '''
 
-        #Probably not the best way to check the file type of these checks, but I don't know what else to do...
-        #Also, I think that we might be supposed to handle .txt files too, but I'm not sure if lxml has any tools to parse those
+        '''
+        Try to parse the document content using lxml.
+        If that does not work, try BeautifulSoup instead.
+        '''
         doc = None
-        if (file_type == 'text/html'):
-            try:
-                doc = html.fromstring(url_data["content"]) #Creates an lxml.html.HtmlElement object
-            except:
-                #apparently soup is slower than lxml?
-                pass #TODO: handle HTML parsing errors somehow
-        elif (file_type == 'text/xml'):
-            #print(url_data["content"])
-            try:
+        try:
+            if(file_type == 'text/html'):
+                doc = html.fromstring(url_data["content"])
+            elif(file_type == 'text/xml'):
                 doc = etree.fromstring(url_data["content"])
+        except:
+            try:
+                doc = soupparser.fromstring(url_data["content"]) 
             except:
-                #Getting lxml.etree.XMLSyntaxError
-                pass #TODO: handle XML parsing errors
+                logger.info("Failed to parse the document.")
+                return []
             
         if(doc == None):
             #Could not parse the document
@@ -189,12 +190,6 @@ class Crawler:
             word_count += token_instances
             self.analytics_data.update_word_frequency(token, token_instances)
         self.analytics_data.update_longest_page(url, word_count) #If this page doesn't break the record, then nothing will change
-        
-        '''
-        Find all subdomains in the URL
-        Update analytics data if there is a subdomain
-        '''
-        self.analytics_data.update_subdomain_frequency(url)
         
         '''
         Find any and all valid outlinks within the page.
