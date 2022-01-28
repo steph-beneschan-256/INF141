@@ -3,7 +3,7 @@ from collections import defaultdict, deque
 from sys import argv #for testing
 
 N = 3 #n value for the n-grams
-X = 4 #x value for 0 mod x; set to 1 to include all prints
+X = 1 #x value for 0 mod x; set to 1 to include all prints
 
 '''
 Find n-grams
@@ -36,9 +36,9 @@ def find_grams(text: str) -> defaultdict:
     return ngrams
 
 '''
-Generate fingerprints
+Generate fingerprints from a list of N-grams
 '''
-def get_fingerprints(ngrams: list) -> set:
+def get_prints_from_ngrams(ngrams: list) -> set:
     fingerprints = set()
     for gram in ngrams:
         f = hash(gram)
@@ -47,12 +47,23 @@ def get_fingerprints(ngrams: list) -> set:
     return fingerprints
 
 '''
-Compare fingerprints
+Generate fingerprints from (document) text
 '''
-def compare_prints(prints1: set, prints2: set) -> float:
+def get_fingerprints(text: str) -> set:
+    grams = find_grams(text)
+    return get_prints_from_ngrams(grams)
+
+'''
+Compare two sets of fingerprints, and see if the ratio of shared
+fingerprints to overall fingerprints is greater than a specified
+threshold (by default 1.0, meaning that the function will only
+return true for an exact match)
+'''
+def compare_prints(prints1: set, prints2: set, threshold=1.0) -> bool:
     shared_prints = prints1.intersection(prints2)
     all_prints = prints1.union(prints2)
-    return len(shared_prints) / len(all_prints)
+    if len(all_prints) <= 0: return False #Prevent division by zero
+    return len(shared_prints) / len(all_prints) > threshold
 
 '''
 For testing
