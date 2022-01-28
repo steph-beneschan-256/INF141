@@ -68,6 +68,13 @@ class Analytics_Data:
     def log_analytics(self, fetched, traps):
 
         output_file = open(self.ANALYTICS_FILE_NAME, 'w')
+        
+        subdomains = list(self.subdomain_url_count.keys())
+        sort_key = lambda x: (-self.subdomain_url_count[x], x)
+        subdomains.sort(key=sort_key)
+        output_file.write("Subdomains Visited:")
+        for subdomain in subdomains:
+            output_file.write("\n\t{0:20}{1}".format(subdomain + ':', self.subdomain_url_count[subdomain]))
 
         output_file.write("Number of URLs processed for each subdomain:")
         for subdomain in self.subdomain_url_count.keys():
