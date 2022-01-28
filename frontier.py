@@ -72,12 +72,11 @@ class Frontier:
         #Maybe have it be one list of fingerprint sets per trimmed URL
         trimmed = self.trim_url(url)
         for saved_prints in self.fingerprint_list[trimmed]:
-            if(fingerprinter.compare_prints(prints, saved_prints)):
+            if(fingerprinter.compare_prints(prints, saved_prints, self.FINGERPRINT_OVERLAP_THRESHOLD)):
                 self.near_dupes[trimmed] += 1
                 if(self.near_dupes[trimmed] > self.MAX_DUPES_ALLOWED):
                     #If it has too many near-duplicate pages, then consider it a trap
                     self.traps.add(trimmed)
-                    #For some reason, this line is getting printed 2+ times for the exact same URL. Why?!?!?!
                     print("Trap detected in {}; too many near-duplicates".format(trimmed))
                 self.register_fingerprints(url, prints)
                 return True
@@ -143,3 +142,4 @@ class Frontier:
     def __len__(self):
         return len(self.urls_queue)
 
+    
