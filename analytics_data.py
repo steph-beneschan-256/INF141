@@ -64,6 +64,24 @@ class Analytics_Data:
     def update_word_frequency(self, word, amount=1):
         if(word not in self.STOP_WORDS): #  will not add if word is a stop word
             self.word_frequencies[word] += amount
+            
+    '''
+    Update the subdomain frequency
+    '''
+    def update_subdomain_frequency(self, url, amount=1):
+        # parse out protocol
+        first = url.find('//')
+        url2 = url[first+2:]
+        # parse out the path
+        second = url2.find('/')
+        #split all subdomains
+        subdomains = url2[:second].split('.')
+        for subdomain in subdomains:
+            if (subdomain != "www"):  
+                if (subdomain not in self.subdomain_url_count.keys()):
+                    self.subdomain_url_count[subdomain] = 0
+                self.subdomain_url_count[subdomain] += amount
+        
 
     def log_analytics(self, fetched, traps):
 
