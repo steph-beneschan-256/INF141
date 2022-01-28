@@ -35,7 +35,7 @@ class Crawler:
     #(This is not the file where the final analytics data will be written to once the crawl is finished)
     ANALYTICS_DIR_NAME = "analytics"
     ANALYTICS_FILE_NAME = os.path.join(".", ANALYTICS_DIR_NAME, "analytics_data.pkl")
-    FETCH_LIMIT = 100000 #Will only crawl this many URLs; should be useful for testing the analytics functionality
+    FETCH_LIMIT = 0 #Will only crawl this many URLs; should be useful for testing the analytics functionality
 
     def __init__(self, frontier, corpus):
         self.frontier = frontier
@@ -101,7 +101,8 @@ class Crawler:
                     if self.corpus.get_file_name(next_link) is not None:
                         self.frontier.add_url(next_link)
 
-        self.analytics_data.log_analytics()
+        print("It looks like the crawling has concluded...?")
+        self.analytics_data.log_analytics(self.frontier.fetched, self.frontier.get_traps())
 
     def extract_next_links(self, url_data):
         """
@@ -157,6 +158,13 @@ class Crawler:
 
         url = (url_data["final_url"] if (url_data["final_url"] != None) else url_data["url"])
 
+        self.analytics_data.new_url_downloaded(url)
+
+        #For analytics
+        subdomains = self.extract_subdomains(url)
+        for subdomain in subdomains:
+            self.analytics_data.update_subdomain_url_count(subdomain)
+
         doc.make_links_absolute(url)
 
         text_no_markup = doc.text_content() #returns object of type lxml.etree._ElementUnicodeResult
@@ -203,6 +211,17 @@ class Crawler:
 
         return outputLinks
 
+    '''
+    Helper function to return list of subdomains in a given URL
+    '''
+    def extract_subdomains(self, url):
+        parsed = urlparse(url)
+        netloc_split = parsed.netloc.split('.')
+        subdomains = []
+        for i in range(len(netloc_split)-1, 0, -1):
+            subdomains.append('.'.join(netloc_split[i:]))
+        return subdomains
+
     def is_valid(self, url):
         """
         Function returns True or False based on whether the url has to be fetched or not. This is a great place to
@@ -220,6 +239,7 @@ class Crawler:
             return False
 
         #TODO: Check for repeating subdomains (maybe if a subdomain appears 3+ times in the URL, declare it invalid?)
+        subdomains = url.split('.')
 
         
         #How do we detect calendar traps???
