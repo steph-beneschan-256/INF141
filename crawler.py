@@ -1,20 +1,18 @@
 import logging
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
-#It should be okay to import these, right...?
+#Additional libraries
 import os
-from urllib.parse import urldefrag
-from lxml import etree as etree #Would it be better to use BeautifulSoup?
+from lxml import etree as etree
 from lxml import html
-from lxml.html import fromstring
-from lxml.html import soupparser
+from bs4 import BeautifulSoup
 import pickle
 from fingerprinter import get_fingerprints
+from collections import defaultdict
 
 #Import a couple of custom classes
 from analytics_data import Analytics_Data
-from frontier import Frontier
 from string_tokenizer import tokenize
 
 # Configures logging and outputting to file
@@ -74,6 +72,9 @@ class Crawler:
     '''
     def log_analytics_data(self):
         self.analytics_data.log_analytics(self.frontier.fetched, self.frontier.traps)
+        self.counter_links_crawled = 0
+        self.counter_domain = defaultdict(int)
+        self.traps = []
 
     def start_crawling(self):
         """
@@ -204,9 +205,11 @@ class Crawler:
         for link in doc.iterlinks():
             link_url = link[2] #According to the lxml documentation, link_url should be a tuple: (element, attribute, link, pos)
             #Is it possible to detect duplication of each new link here?
-            if((link != None) and self.is_valid(link_url)):
-                outputLinks.append(link_url)
-                valid_links += 1
+            if(link != None):
+                self.counter_links_crawled += 1
+                if(self.is_valid(link_url)):
+                    outputLinks.append(link_url)
+                    valid_links += 1
         self.analytics_data.update_most_valid_outlinks(url, valid_links) #If this page doesn't break the record, then nothing will change
 
         return outputLinks
@@ -240,15 +243,16 @@ class Crawler:
 
         #TODO: Check for repeating subdomains (maybe if a subdomain appears 3+ times in the URL, declare it invalid?)
         subdomains = url.split('.')
-
         
-        #How do we detect calendar traps???
-
-
-        #https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlparse
-
         #original code from skeleton below:
         parsed = urlparse(url)
+        domain = parsed.netloc + parsed.path
+
+        # to avoid calendar trap, track the access amounts
+        # the arbitrary and intuitive number here I put 20
+        if self.counter_domain[domain] >= 20:
+            self.traps.append(domain)
+        
         if parsed.scheme not in set(["http", "https"]):
             return False
         try:
