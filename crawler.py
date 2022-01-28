@@ -191,6 +191,12 @@ class Crawler:
         self.analytics_data.update_longest_page(url, word_count) #If this page doesn't break the record, then nothing will change
         
         '''
+        Find all subdomains in the URL
+        Update analytics data if there is a subdomain
+        '''
+        self.analytics_data.update_subdomain_frequency(url)
+        
+        '''
         Find any and all valid outlinks within the page.
         Also, update the analytics data if this page breaks
         the record for most valid outlinks
