@@ -41,7 +41,7 @@ class Crawler:
         self.corpus = corpus
         self.counter_links_crawled = 0
         self.counter_domain = defaultdict(int)
-        self.traps = []
+        #self.traps = []
 
 
     '''
@@ -91,12 +91,19 @@ class Crawler:
             print("Fetching URL {} ... Fetched: {}, Queue size: {}".format(url, self.frontier.fetched, len(self.frontier)))
             url_data = self.corpus.fetch_url(url)
 
+            #logger.info(url_data["content"].decode("utf-8"))
+            # logger.info(url_data["content"].find(b'\0'))
+            # logger.info(url_data["content"]) #for debugging
+            # logger.info(url_data["content"].decode("utf-8")) #the string with all the null characters
+            # a = url_data["content"].replace(b"\x00", b"")
+            # logger.info(a.decode("utf-8"))
+
             for next_link in self.extract_next_links(url_data):
                 if self.is_valid(next_link):
                     if self.corpus.get_file_name(next_link) is not None:
                         self.frontier.add_url(next_link)
 
-        print("It looks like the crawling has concluded...?")
+        print("Crawling complete.")
         self.analytics_data.log_analytics(self.frontier.fetched, self.frontier.get_traps())
 
     def extract_next_links(self, url_data):
@@ -112,24 +119,21 @@ class Crawler:
         """
         outputLinks = []
 
-        '''
-        The value of url_data["content_type"] is usually "b'text/html; charset=UTF-8'"
-        This includes the "b'" within the string for some reason (something to do with converting from bytes to str?)
-        Sometimes the encoding isn't present
-        '''
         if(url_data["content_type"] == None):
             return []
 
+        '''
+        Determine the whether the page is an HTML or XML document.
+        Due to a presumed error in converting from bytes to str, content_type is usually prefixed by "b'" so we need to remove this.
+
+        Sometimes the encoding isn't present
+        '''
         content_type = url_data["content_type"].removeprefix("b\'") #https://docs.python.org/3.9/library/stdtypes.html?highlight=removeprefix#str.removeprefix
         file_type = content_type.split(';')[0] #usually content_type has both a filetype and an encoding, but sometimes the encoding is absent...
+        #logger.info(url_data["content_type"])
 
-        '''
-        Misc. notes on file parsing:
-        - We can assume that we only need to decode using UTF-8 
-            https://piazza.com/class/kxzmqq02jne6go?cid=78
-        - Need to parse 
-        - 
-        '''
+        if(url_data["content"][:5] == b"<?xml"):
+            logger.info("XML Prolog found")
 
         '''
         Try to parse the document content using lxml.
@@ -137,16 +141,26 @@ class Crawler:
         '''
         doc = None
         try:
+            #Try the HTML and XML parsers
             if(file_type == 'text/html'):
                 doc = html.fromstring(url_data["content"])
             elif(file_type == 'text/xml'):
                 doc = etree.fromstring(url_data["content"])
         except:
             try:
+                #If the other parsers failed, then try the Beautiful Soup parser.
                 doc = soupparser.fromstring(url_data["content"]) 
             except:
-                logger.info("Failed to parse the document.")
-                return []
+                try:
+                    #Check if the bytes contain excessive null terminators.
+                    #If so, eliminate them.
+                    if(url_data["content"].count(b'\x00') > 0):
+                        logger.info("Excess null terminators found. Eliminating now.")
+                        content_cleaned = url_data["content"].replace(b'\x00', b'')
+                        doc = soupparser.fromstring(url_data[content_cleaned])
+                except:
+                    logger.info("Failed to parse the document.")
+                    return []
             
         if(doc == None):
             #Could not parse the document
@@ -220,7 +234,7 @@ class Crawler:
         subdomains = []
         for i in range(len(domain_split) - 2):                          # exlude the 2 root domains: uci.edu and edu
             subdomains.append('.'.join(domain_split[i:]))
-        return subdomains 
+        return subdomains
 
     def is_valid(self, url):
         """
@@ -251,7 +265,7 @@ class Crawler:
         # to avoid calendar trap, track the access amounts
         # the arbitrary and intuitive number here I put 20
         if self.counter_domain[domain] >= 20:
-            self.traps.append(domain)
+            self.frontier.traps.add(domain)
         
         if parsed.scheme not in set(["http", "https"]):
             return False
