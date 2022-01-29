@@ -25,7 +25,6 @@ class Analytics_Data:
     Update the number of URLs processed for a given subdomain
     (Assuming that duplicate URLs are not an issue...)
     '''
-    
     def update_subdomain_url_count(self, subdomain):
         if (subdomain not in self.subdomain_url_count.keys()):
             self.subdomain_url_count[subdomain] = 0
@@ -67,13 +66,11 @@ class Analytics_Data:
     def update_word_frequency(self, word, amount=1):
         if(word not in self.STOP_WORDS): #  will not add if word is a stop word
             self.word_frequencies[word] += amount
-            
-        
 
     def log_analytics(self, fetched, traps):
 
         output_file = open(self.ANALYTICS_FILE_NAME, 'w')
-        
+    
         subdomains = list(self.subdomain_url_count.keys())
         sort_key = lambda x: (-self.subdomain_url_count[x], x)
         subdomains.sort(key=sort_key)
@@ -84,14 +81,20 @@ class Analytics_Data:
         output_file.write("\nPage with most valid outlinks:")
         output_file.write("\n\tURL: {}".format(self.most_valid_outlinks_url))
         output_file.write("\n\tNumber of Outlinks: {}".format(self.most_valid_outlinks_count))
-        
+
         output_file.write("\nURLs Downloaded:")
         for url in self.urls_downloaded:
-            output_file.write("\n\t{}".format(url))
+            try:
+                output_file.write("\n\t{}".format(url))
+            except UnicodeEncodeError:
+                output_file.write("\n\t{}".format(url.encode("utf-8")))
 
         output_file.write("\nIdentified Traps:")
         for trap in traps:
-            output_file.write("\n\t{}".format(trap))
+            try:
+                output_file.write("\n\t{}".format(trap))
+            except UnicodeEncodeError:
+                output_file.write("\n\t{}".format(trap.encode("utf-8")))
 
         output_file.write("\nPage with highest word count:")
         output_file.write("\n\tURL: {}".format(self.longest_page_url))
@@ -99,9 +102,6 @@ class Analytics_Data:
 
         output_file.write("\nNumber of URLs fetched:")
         output_file.write("\n\t{}".format(fetched))
-
-        #Time to calculate the goddamn word frequencies
-        #We can add the stopword checking later, can't we...?
 
         #Reused code from Assignment 1A
         #As before, the idea to use tuples for tie-breaking came from this resource: https://stackoverflow.com/a/54396160
