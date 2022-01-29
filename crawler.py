@@ -214,11 +214,13 @@ class Crawler:
     '''
     def extract_subdomains(self, url):
         parsed = urlparse(url)
-        netloc_split = parsed.netloc.split('.')
+        netloc = parsed.netloc
+        domain = netloc.replace('www.','')
+        domain_split = domain.split('.')
         subdomains = []
-        for i in range(len(netloc_split)-1, 0, -1):
-            subdomains.append('.'.join(netloc_split[i:]))
-        return subdomains
+        for i in range(len(domain_split) - 2):                          # exlude the 2 root domains: uci.edu and edu
+            subdomains.append('.'.join(domain_split[i:]))
+        return subdomains 
 
     def is_valid(self, url):
         """
