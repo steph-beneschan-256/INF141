@@ -41,7 +41,6 @@ class Crawler:
         self.corpus = corpus
         self.counter_links_crawled = 0
         self.counter_domain = defaultdict(int)
-        #self.traps = []
 
 
     '''
@@ -91,13 +90,6 @@ class Crawler:
             print("Fetching URL {} ... Fetched: {}, Queue size: {}".format(url, self.frontier.fetched, len(self.frontier)))
             url_data = self.corpus.fetch_url(url)
 
-            #logger.info(url_data["content"].decode("utf-8"))
-            # logger.info(url_data["content"].find(b'\0'))
-            # logger.info(url_data["content"]) #for debugging
-            # logger.info(url_data["content"].decode("utf-8")) #the string with all the null characters
-            # a = url_data["content"].replace(b"\x00", b"")
-            # logger.info(a.decode("utf-8"))
-
             for next_link in self.extract_next_links(url_data):
                 if self.is_valid(next_link):
                     if self.corpus.get_file_name(next_link) is not None:
@@ -132,8 +124,13 @@ class Crawler:
         file_type = content_type.split(';')[0] #usually content_type has both a filetype and an encoding, but sometimes the encoding is absent...
         #logger.info(url_data["content_type"])
 
-        if(url_data["content"][:5] == b"<?xml"):
-            logger.info("XML Prolog found")
+        '''
+        For some URLs from the fano subdomain, url_data["content"] is a str object rather than a bytes object.
+        In this case, we must convert the object to bytes.
+        Professor said on Piazza that we can assume all documents are encoded in UTF-8
+        '''
+        if(not isinstance(url_data["content"], bytes)):
+            url_data["content"] = bytes(url_data["content"], 'UTF-8')
 
         '''
         Try to parse the document content using lxml.
@@ -150,6 +147,7 @@ class Crawler:
             try:
                 #If the other parsers failed, then try the Beautiful Soup parser.
                 doc = soupparser.fromstring(url_data["content"]) 
+                logger.info("go soup go")
             except:
                 try:
                     #Check if the bytes contain excessive null terminators.
@@ -157,7 +155,7 @@ class Crawler:
                     if(url_data["content"].count(b'\x00') > 0):
                         logger.info("Excess null terminators found. Eliminating now.")
                         content_cleaned = url_data["content"].replace(b'\x00', b'')
-                        doc = soupparser.fromstring(url_data[content_cleaned])
+                        doc = html.fromstring(content_cleaned)
                 except:
                     logger.info("Failed to parse the document.")
                     return []
