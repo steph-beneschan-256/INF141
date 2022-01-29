@@ -25,7 +25,10 @@ class Analytics_Data:
     Update the number of URLs processed for a given subdomain
     (Assuming that duplicate URLs are not an issue...)
     '''
+    
     def update_subdomain_url_count(self, subdomain):
+        if (subdomain not in self.subdomain_url_count.keys()):
+            self.subdomain_url_count[subdomain] = 0
         self.subdomain_url_count[subdomain] += 1
 
     '''
@@ -65,22 +68,6 @@ class Analytics_Data:
         if(word not in self.STOP_WORDS): #  will not add if word is a stop word
             self.word_frequencies[word] += amount
             
-    '''
-    Update the subdomain frequency
-    '''
-    def update_subdomain_frequency(self, url, amount=1):
-        # parse out protocol
-        first = url.find('//')
-        url2 = url[first+2:]
-        # parse out the path
-        second = url2.find('/')
-        #split all subdomains
-        subdomains = url2[:second].split('.')
-        for subdomain in subdomains:
-            if (subdomain != "www"):  
-                if (subdomain not in self.subdomain_url_count.keys()):
-                    self.subdomain_url_count[subdomain] = 0
-                self.subdomain_url_count[subdomain] += amount
         
 
     def log_analytics(self, fetched, traps):
@@ -90,12 +77,8 @@ class Analytics_Data:
         subdomains = list(self.subdomain_url_count.keys())
         sort_key = lambda x: (-self.subdomain_url_count[x], x)
         subdomains.sort(key=sort_key)
-        output_file.write("Subdomains Visited:")
-        for subdomain in subdomains:
-            output_file.write("\n\t{0:20}{1}".format(subdomain + ':', self.subdomain_url_count[subdomain]))
-
         output_file.write("Number of URLs processed for each subdomain:")
-        for subdomain in self.subdomain_url_count.keys():
+        for subdomain in subdomains:
             output_file.write("\n\t{0:20}{1}".format(subdomain + ':', self.subdomain_url_count[subdomain]))
 
         output_file.write("\nPage with most valid outlinks:")
