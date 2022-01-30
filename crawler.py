@@ -28,7 +28,8 @@ class Crawler:
     the frontier
     """
 
-    URL_SIZE_LIMIT = 200 #Is this too high?
+    URL_SIZE_LIMIT = 300 #Is this too high?
+    DOMAIN_ACCESS_LIMIT = 200
     #Directory/file name for analytics file
     #It's probably fastest to use a single file for the analytics data, right?
     #(This is not the file where the final analytics data will be written to once the crawl is finished)
@@ -241,18 +242,21 @@ class Crawler:
         in this method
         """
         if(len(url) > self.URL_SIZE_LIMIT):
-            #print("trap detected in {}; url too long".format(url))
+            self.frontier.traps.add(url)
             return False
 
         #Using the frontier to store trap data
         trimmed = self.frontier.trim_url(url)
         if(trimmed in self.frontier.traps):
-            logger.info("\tTrap found. Ignoring.")
             return False
 
-        #TODO: Check for repeating subdomains (maybe if a subdomain appears 3+ times in the URL, declare it invalid?)
-        #Cora said that it should be fine to use regex for this
+        #Check for repeating subdomains
+        #If the exact same subdomain appears 3+ times in the URL, then consider the URL a trap
         subdomains = self.extract_subdomains(url)
+        for subdomain in subdomains:
+            if(url.count(subdomain) >= 3):
+                self.frontier.traps.add(url)
+                return False
         
         #original code from skeleton below:
         parsed = urlparse(url)
@@ -261,8 +265,8 @@ class Crawler:
         self.counter_domain[domain] += 1
 
         # to avoid calendar trap, track the access amounts
-        # the arbitrary and intuitive number here I put 20
-        if self.counter_domain[domain] >= 20:
+        # the arbitrary and intuitive number I put here is DOMAIN_ACCESS_LIMIT
+        if self.counter_domain[domain] >= self.DOMAIN_ACCESS_LIMIT:
             self.frontier.traps.add(domain)
         
         if parsed.scheme not in set(["http", "https"]):
