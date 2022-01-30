@@ -55,6 +55,12 @@ class Frontier:
 
     def is_duplicate(self, url):
         return url in self.urls_set
+    
+    '''
+    Custom getter method returns set of traps
+    '''
+    def get_traps(self):
+        return self.traps
 
     '''
     Custom function to remove query and fragment from URL
