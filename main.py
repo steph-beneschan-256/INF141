@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # Instantiates a crawler object and starts crawling
     crawler = Crawler(frontier, corpus)
 
-    #NOTE: need to confirm that modifying this file, main.py , is permitted
-    #atexit.register(crawler.save_analytics_data)
+    #Registers a shutdown hook to save analytics data upon an unexpected shutdown
+    atexit.register(crawler.save_analytics_data)
 
     crawler.start_crawling()
