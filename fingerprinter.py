@@ -42,7 +42,7 @@ def get_prints_from_ngrams(ngrams: list) -> set:
     fingerprints = set()
     for gram in ngrams:
         f = hash(gram)
-        if(f % X == 0): #What happens if none of the prints qualify?
+        if(f % X == 0):
             fingerprints.add(f)
     return fingerprints
 
