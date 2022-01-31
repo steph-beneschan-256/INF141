@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 '''
-A basic tokenizer repurposed from Assignment 1
+A basic tokenizer function repurposed from Assignment 1
 Take a string and tokenize it
 '''
 def tokenize(text) -> defaultdict:
